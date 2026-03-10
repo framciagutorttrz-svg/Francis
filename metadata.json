@@ -1,0 +1,5 @@
+{
+  "name": "EduPulse Dashboard",
+  "description": "A centralized school information dashboard for announcements, schedules, and real-time updates.",
+  "requestFramePermissions": []
+}
