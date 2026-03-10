@@ -10,7 +10,8 @@ import {
   User,
   Video,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Announcement, SchoolEvent, Schedule } from './types';
@@ -19,13 +20,60 @@ import ScheduleWidget from './components/ScheduleWidget';
 import EventsWidget from './components/EventsWidget';
 import VeoGenerator from './components/VeoGenerator';
 import AdminPanel from './components/AdminPanel';
+import LoginForm from './components/LoginForm';
 
 export default function App() {
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [events, setEvents] = useState<SchoolEvent[]>([]);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([
+    {
+      id: 1,
+      title: "Welcome to the New Semester!",
+      content: "We are excited to welcome all students back for the spring semester. Please check your updated schedules.",
+      type: "general",
+      author: "Principal Smith",
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      title: "Urgent: School Closure Tomorrow",
+      content: "Due to severe weather conditions, the school will be closed tomorrow. All classes will be held online.",
+      type: "urgent",
+      author: "Admin Office",
+      created_at: new Date().toISOString()
+    }
+  ]);
+  const [events, setEvents] = useState<SchoolEvent[]>([
+    {
+      id: 1,
+      title: "Science Fair 2026",
+      description: "Annual science fair showcasing student projects.",
+      date: "2026-03-25",
+      time: "10:00 AM",
+      location: "Main Hall"
+    },
+    {
+      id: 2,
+      title: "Parent-Teacher Meeting",
+      description: "Discuss student progress with teachers.",
+      date: "2026-04-05",
+      time: "02:00 PM",
+      location: "Classrooms"
+    }
+  ]);
+  const [schedules, setSchedules] = useState<Schedule[]>([
+    { id: 1, class_name: "Mathematics", teacher: "Dr. Aris", day_of_week: "Monday", start_time: "08:00 AM", end_time: "09:30 AM", room: "Room 101" },
+    { id: 2, class_name: "Physics", teacher: "Prof. Newton", day_of_week: "Monday", start_time: "10:00 AM", end_time: "11:30 AM", room: "Lab A" },
+    { id: 3, class_name: "Mathematics", teacher: "Dr. Aris", day_of_week: "Tuesday", start_time: "08:00 AM", end_time: "09:30 AM", room: "Room 101" },
+    { id: 4, class_name: "Physics", teacher: "Prof. Newton", day_of_week: "Tuesday", start_time: "10:00 AM", end_time: "11:30 AM", room: "Lab A" },
+    { id: 5, class_name: "Mathematics", teacher: "Dr. Aris", day_of_week: "Wednesday", start_time: "08:00 AM", end_time: "09:30 AM", room: "Room 101" },
+    { id: 6, class_name: "Physics", teacher: "Prof. Newton", day_of_week: "Wednesday", start_time: "10:00 AM", end_time: "11:30 AM", room: "Lab A" },
+    { id: 7, class_name: "Mathematics", teacher: "Dr. Aris", day_of_week: "Thursday", start_time: "08:00 AM", end_time: "09:30 AM", room: "Room 101" },
+    { id: 8, class_name: "Physics", teacher: "Prof. Newton", day_of_week: "Thursday", start_time: "10:00 AM", end_time: "11:30 AM", room: "Lab A" },
+    { id: 9, class_name: "Mathematics", teacher: "Dr. Aris", day_of_week: "Friday", start_time: "08:00 AM", end_time: "09:30 AM", room: "Room 101" },
+    { id: 10, class_name: "Physics", teacher: "Prof. Newton", day_of_week: "Friday", start_time: "10:00 AM", end_time: "11:30 AM", room: "Lab A" }
+  ]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,11 +85,22 @@ export default function App() {
           fetch('/api/schedules')
         ]);
         
-        setAnnouncements(await annRes.json());
-        setEvents(await evRes.json());
-        setSchedules(await schRes.json());
+        if (annRes.ok) {
+          const annData = await annRes.json();
+          if (annData && annData.length > 0) setAnnouncements(annData);
+        }
+        
+        if (evRes.ok) {
+          const evData = await evRes.json();
+          if (evData && evData.length > 0) setEvents(evData);
+        }
+        
+        if (schRes.ok) {
+          const schData = await schRes.json();
+          if (schData && schData.length > 0) setSchedules(schData);
+        }
       } catch (error) {
-        console.error("Failed to fetch data", error);
+        console.error("Failed to fetch data, using mock data", error);
       } finally {
         setLoading(false);
       }
@@ -60,8 +119,28 @@ export default function App() {
       }
     };
 
-    return () => ws.close();
+    const handleSwitchTab = (e: any) => {
+      setActiveTab(e.detail);
+    };
+    window.addEventListener('switchTab', handleSwitchTab);
+
+    return () => {
+      ws.close();
+      window.removeEventListener('switchTab', handleSwitchTab);
+    };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginForm onLogin={setUser} />;
+  }
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -71,14 +150,6 @@ export default function App() {
     { id: 'media', label: 'School Media', icon: Video },
     { id: 'admin', label: 'Admin Panel', icon: PlusCircle },
   ];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 font-sans">
@@ -95,7 +166,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               className="text-xl font-bold text-indigo-600 tracking-tight"
             >
-              EduPulse
+              Arellano Elisa Esguerra
             </motion.h1>
           )}
           <button 
@@ -123,19 +194,26 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100 space-y-1">
           <button className="w-full flex items-center p-3 text-slate-500 hover:bg-slate-50 rounded-xl transition-all">
             <Settings size={20} />
             {isSidebarOpen && <span className="ml-3">Settings</span>}
           </button>
+          <button 
+            onClick={() => setUser(null)}
+            className="w-full flex items-center p-3 text-red-500 hover:bg-red-50 rounded-xl transition-all"
+          >
+            <LogOut size={20} />
+            {isSidebarOpen && <span className="ml-3">Logout</span>}
+          </button>
           <div className="mt-4 flex items-center p-3">
             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-              JD
+              {user.name.split(' ').map(n => n[0]).join('')}
             </div>
             {isSidebarOpen && (
               <div className="ml-3 overflow-hidden">
-                <p className="text-sm font-medium truncate">John Doe</p>
-                <p className="text-xs text-slate-500 truncate">Administrator</p>
+                <p className="text-sm font-medium truncate">{user.name}</p>
+                <p className="text-xs text-slate-500 truncate">{user.role}</p>
               </div>
             )}
           </div>

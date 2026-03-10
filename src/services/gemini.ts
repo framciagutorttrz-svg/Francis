@@ -22,7 +22,9 @@ export async function checkAndOpenApiKey() {
 export async function generateVeoVideo(prompt: string, imageBase64?: string, mimeType?: string) {
   await checkAndOpenApiKey();
   
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  // Use API_KEY if available (from key selection dialog), fallback to GEMINI_API_KEY
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
   
   const config: any = {
     model: 'veo-3.1-fast-generate-preview',
@@ -41,13 +43,23 @@ export async function generateVeoVideo(prompt: string, imageBase64?: string, mim
     };
   }
 
-  let operation = await ai.models.generateVideos(config);
-
-  return operation;
+  try {
+    let operation = await ai.models.generateVideos(config);
+    return operation;
+  } catch (error: any) {
+    // If permission denied or model not found, prompt to select key again
+    if (error.message?.includes('PERMISSION_DENIED') || 
+        error.message?.includes('Requested entity was not found') ||
+        error.message?.includes('403')) {
+      await window.aistudio.openSelectKey();
+    }
+    throw error;
+  }
 }
 
 export async function pollVideoOperation(operationId: any) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
   let operation = operationId;
   
   while (!operation.done) {

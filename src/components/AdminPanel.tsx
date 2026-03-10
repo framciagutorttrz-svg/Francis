@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Send, Megaphone, AlertTriangle, Info, Bell, Loader2, CheckCircle2 } from 'lucide-react';
 import { Announcement } from '../types';
+import { supabaseService } from '../services/supabaseService';
 
 interface AdminPanelProps {
   onAnnouncementCreated: (ann: Announcement) => void;
@@ -19,26 +20,39 @@ export default function AdminPanel({ onAnnouncementCreated }: AdminPanelProps) {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/announcements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      let newAnn: Announcement;
+      
+      if (isSupabaseConfigured) {
+        newAnn = await supabaseService.createAnnouncement({
           title,
           content,
           type,
-          author: 'Admin Office' // In a real app, this would be the logged-in user
-        })
-      });
-
-      if (res.ok) {
-        const newAnn = await res.json();
-        onAnnouncementCreated(newAnn);
-        setTitle('');
-        setContent('');
-        setType('general');
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+          author: 'Admin Office'
+        });
+      } else {
+        const res = await fetch('/api/announcements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            content,
+            type,
+            author: 'Admin Office'
+          })
+        });
+        
+        if (!res.ok) throw new Error('Failed to create announcement');
+        newAnn = await res.json();
       }
+
+      onAnnouncementCreated(newAnn);
+      setTitle('');
+      setContent('');
+      setType('general');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error("Failed to create announcement", error);
     } finally {

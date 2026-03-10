@@ -12,8 +12,20 @@ export default function ScheduleWidget({ schedules, fullWidth }: ScheduleWidgetP
 
   if (todaySchedules.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
-        No classes scheduled for today.
+      <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
+        <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Clock size={32} />
+        </div>
+        <h4 className="text-lg font-bold text-slate-900 mb-2">No classes today</h4>
+        <p className="text-slate-500 mb-6">It looks like you have no classes scheduled for {currentDay}.</p>
+        {!fullWidth && (
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'schedule' }))}
+            className="text-indigo-600 font-bold hover:underline"
+          >
+            View full weekly schedule
+          </button>
+        )}
       </div>
     );
   }

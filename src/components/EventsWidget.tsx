@@ -8,8 +8,12 @@ interface EventsWidgetProps {
 export default function EventsWidget({ events }: EventsWidgetProps) {
   if (events.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
-        No upcoming events.
+      <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
+        <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Calendar size={32} />
+        </div>
+        <h4 className="text-lg font-bold text-slate-900 mb-2">No upcoming events</h4>
+        <p className="text-slate-500">Stay tuned for future school activities and meetings.</p>
       </div>
     );
   }
